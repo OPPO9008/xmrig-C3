@@ -1,0 +1,9 @@
+set(CMAKE_SYSTEM_PROCESSOR ARM64)
+set(TARGET_TRIPLE aarch64-linux-gnu)
+
+# Currently only use clang as it makes cross-compilation easier
+set(CMAKE_ASM_COMPILER_TARGET ${TARGET_TRIPLE})
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_C_COMPILER_TARGET ${TARGET_TRIPLE})
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_CXX_COMPILER_TARGET ${TARGET_TRIPLE})
