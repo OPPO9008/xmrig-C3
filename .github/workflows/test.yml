@@ -21,7 +21,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get -y install git build-essential cmake automake make libtool autoconf
-          PATH=$ANDROID_HOME/cmake/3.22.1/bin:${ANDROID_HOME}/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+          ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/26.3.11579264"
+          ANDROID_NDK_ROOT="${ANDROID_HOME}/ndk/26.3.11579264"
+          PATH=$ANDROID_HOME/cmake/3.22.1/bin:${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
           TOOLCHAIN=$ANDROID_HOME/ndk/26.3.11579264/build/cmake/android.toolchain.cmake
           ANDROID_PLATFORM=android-29
           mkdir build && cd scripts
@@ -60,7 +62,7 @@ jobs:
           tar -xzf openssl-${OPENSSL_VERSION}.tar.gz
 
           cd openssl-${OPENSSL_VERSION}
-          ./config android-arm64 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms  CC=aarch64-linux-android29-clang CXX=aarch64-linux-android29-clang++ LD=lld
+          ./config android-arm64 -D__ANDROID_API__=29 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms LD=lld
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
           cp -fr include ../../deps
           cp libcrypto.a ../../deps/lib
