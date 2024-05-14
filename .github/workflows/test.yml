@@ -35,7 +35,7 @@ jobs:
           tar -xzf v${UV_VERSION}.tar.gz
           cd libuv-v${UV_VERSION}
           pwd
-          cmake -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DBUILD_SHARED_LIBS=OFF
+          cmake -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=$ANDROID_PLATFORM -DBUILD_SHARED_LIBS=OFF
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
           cp -fr include ../../deps
           cp libuv.a ../../deps/lib
@@ -69,8 +69,7 @@ jobs:
 
           cd ../
           cd ../build
-          cmake /home/runner/work/xmrig-C3/xmrig-C3 -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE="/home/runner/work/xmrig-C3/xmrig-C3/cmake/Toolchain-Clang-ARM64.cmake"
-          make -j$(nproc) LD=lld
+          cmake /home/runner/work/xmrig-C3/xmrig-C3 -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=$ANDROID_PLATFORM
           ls -a
           cd ../
       - name: Archive production artifacts
