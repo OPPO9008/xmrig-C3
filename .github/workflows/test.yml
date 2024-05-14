@@ -1,32 +1,77 @@
-on: push
-
-name: Test builds
-
+on: 
+ workflow_dispatch:
+    
 jobs:
-  build_win:
-    name: Windows build
-    runs-on: windows-2019
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [arm64]
     steps:
       - name: Checkout code
-        uses: actions/checkout@master
-      - name: Checkout deps
-        run:  git clone https://github.com/xmrig/xmrig-deps.git
-      - name: Build project on Windows
-        run: |
-          cmake . -G "MinGW Makefiles" -DXMRIG_DEPS=xmrig-deps\gcc\x64
-          make -j2
-
-  build_lin:
-    name: Ubuntu build
-    runs-on: ubuntu-latest
-    steps:
+        uses: actions/checkout@v2
       - name: Prepare Ubuntu tools
         run: |
           sudo apt update
-          sudo apt install -y git build-essential cmake libuv1-dev libssl-dev libhwloc-dev
-      - name: Checkout code
-        uses: actions/checkout@master
-      - name: Build project on Ubuntu
-        run: |
-          cmake .
-          make -j$(nproc)
+          sudo apt-get -y install git build-essential cmake automake libtool autoconf clang gcc-aarch64-linux-gnu g++-aarch64-linux-gnu make binutils-aarch64-linux-gnu libc6-dev-arm64-cross crossbuild-essential-arm64 lld libc++-dev
+          sudo cp aarch64-linux-gnu-clang* /usr/bin
+          sudo chmod +x /usr/bin/aarch64-linux-gnu-clang*
+          export CC=aarch64-linux-gnu-clang
+          export CXX=aarch64-linux-gnu-clang++
+          export LD=lld
+          #export CFLAGS="-O3 --target=aarch64-linux-gnu"
+          #export CXXFLAGS="-O3 --target=aarch64-linux-gnu"
+          mkdir build && cd scripts
+          mkdir -p deps
+          mkdir -p deps/include
+          mkdir -p deps/lib
+          mkdir -p build && cd build
+
+          UV_VERSION="1.48.0"
+          wget https://dist.libuv.org/dist/v${UV_VERSION}/libuv-v${UV_VERSION}.tar.gz -O v${UV_VERSION}.tar.gz
+          tar -xzf v${UV_VERSION}.tar.gz
+          cd libuv-v${UV_VERSION}
+          pwd
+          cmake -DCMAKE_TOOLCHAIN_FILE="../../../cmake/Toolchain-Clang-ARM64.cmake" -DBUILD_SHARED_LIBS=OFF
+          make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
+          cp -fr include ../../deps
+          cp libuv.a ../../deps/lib
+          cd ../
+
+          HWLOC_VERSION_MAJOR="2"
+          HWLOC_VERSION_MINOR="10"
+          HWLOC_VERSION_PATCH="0"
+
+          HWLOC_VERSION="${HWLOC_VERSION_MAJOR}.${HWLOC_VERSION_MINOR}.${HWLOC_VERSION_PATCH}"
+          wget https://download.open-mpi.org/release/hwloc/v${HWLOC_VERSION_MAJOR}.${HWLOC_VERSION_MINOR}/hwloc-${HWLOC_VERSION}.tar.gz -O hwloc-${HWLOC_VERSION}.tar.gz
+          tar -xzf hwloc-${HWLOC_VERSION}.tar.gz
+          cd hwloc-${HWLOC_VERSION}
+          ./configure --disable-shared --enable-static --host=aarch64-linux-gnu
+          make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
+          cp -fr include ../../deps
+          cp hwloc/.libs/libhwloc.a ../../deps/lib
+          cd ../
+
+          OPENSSL_VERSION="3.0.13"
+          wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -O openssl-${OPENSSL_VERSION}.tar.gz
+          tar -xzf openssl-${OPENSSL_VERSION}.tar.gz
+
+          cd openssl-${OPENSSL_VERSION}
+          ./config linux-aarch64 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms
+          make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
+          cp -fr include ../../deps
+          cp libcrypto.a ../../deps/lib
+          cp libssl.a ../../deps/lib
+          cd ../
+
+          cd ../build
+          cmake /home/runner/work/xmrig-C3/xmrig-C3 -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE="/home/runner/work/xmrig-C3/xmrig-C3/cmake/Toolchain-Clang-ARM64.cmake"
+          make -j$(nproc) LD=lld
+          ls -a
+          cd ../
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-without-markdown
+          path: |
+            scripts/build/xmrig
