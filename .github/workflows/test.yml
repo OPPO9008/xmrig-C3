@@ -77,12 +77,12 @@ jobs:
           -DWITH_CUDA=OFF -DARM_V8=ON \
           -DXMRIG_DEPS=scripts/deps \
           -DHWLOC_LIBRARY="scripts/deps/lib/libhwloc.a" \
-          -DHWLOC_INCLUDE_DIR="scripts/deps/include"
+          -DHWLOC_INCLUDE_DIR="scripts/deps/include" \
           -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF \
           -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN \
           -DANDROID_ABI="arm64-v8a" \
-          -DANDROID_PLATFORM=$ANDROID_PLATFORM
-          ls -a
+          -DANDROID_PLATFORM=$ANDROID_PLATFORM \
+          make -j$(nproc)
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
