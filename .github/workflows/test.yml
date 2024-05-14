@@ -62,7 +62,7 @@ jobs:
           tar -xzf openssl-${OPENSSL_VERSION}.tar.gz
 
           cd openssl-${OPENSSL_VERSION}
-          ./config android-arm64 -D__ANDROID_API__=29 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms LD=lld
+          ./config android-arm64 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms LD=lld
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
           cp -fr include ../../deps
           cp libcrypto.a ../../deps/lib
@@ -71,7 +71,7 @@ jobs:
 
           cd ../
           cd ../build
-          cmake /home/runner/work/xmrig-C3/xmrig-C3 -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=$ANDROID_PLATFORM
+          cmake ../ -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=$ANDROID_PLATFORM
           ls -a
           cd ../
       - name: Archive production artifacts
