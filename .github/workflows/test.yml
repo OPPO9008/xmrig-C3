@@ -10,17 +10,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+          architecture: 'x64'
+      - uses: nttld/setup-ndk@v1.0.6
+        with:
+          ndk-version: r26
       - name: Prepare Ubuntu tools
         run: |
           sudo apt update
-          sudo apt-get -y install git build-essential cmake automake libtool autoconf clang gcc-aarch64-linux-gnu g++-aarch64-linux-gnu make binutils-aarch64-linux-gnu libc6-dev-arm64-cross crossbuild-essential-arm64 lld libc++-dev
-          sudo cp aarch64-linux-gnu-clang* /usr/bin
-          sudo chmod +x /usr/bin/aarch64-linux-gnu-clang*
-          export CC=aarch64-linux-gnu-clang
-          export CXX=aarch64-linux-gnu-clang++
-          export LD=lld
-          #export CFLAGS="-O3 --target=aarch64-linux-gnu"
-          #export CXXFLAGS="-O3 --target=aarch64-linux-gnu"
+          sudo apt-get -y install git build-essential cmake automake make libtool autoconf
+          PATH=$ANDROID_HOME/cmake/3.22.1/bin:${ANDROID_HOME}/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+          TOOLCHAIN=$ANDROID_HOME/ndk/26.3.11579264/build/cmake/android.toolchain.cmake
+          ANDROID_PLATFORM=android-29
           mkdir build && cd scripts
           mkdir -p deps
           mkdir -p deps/include
@@ -32,7 +35,7 @@ jobs:
           tar -xzf v${UV_VERSION}.tar.gz
           cd libuv-v${UV_VERSION}
           pwd
-          cmake -DCMAKE_TOOLCHAIN_FILE="../../../cmake/Toolchain-Clang-ARM64.cmake" -DBUILD_SHARED_LIBS=OFF
+          cmake -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DBUILD_SHARED_LIBS=OFF
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
           cp -fr include ../../deps
           cp libuv.a ../../deps/lib
@@ -46,7 +49,7 @@ jobs:
           wget https://download.open-mpi.org/release/hwloc/v${HWLOC_VERSION_MAJOR}.${HWLOC_VERSION_MINOR}/hwloc-${HWLOC_VERSION}.tar.gz -O hwloc-${HWLOC_VERSION}.tar.gz
           tar -xzf hwloc-${HWLOC_VERSION}.tar.gz
           cd hwloc-${HWLOC_VERSION}
-          ./configure --disable-shared --enable-static --host=aarch64-linux-gnu
+          ./configure CC=aarch64-linux-android29-clang CXX=aarch64-linux-android29-clang++ LD=lld --disable-shared --enable-static --host=aarch64-linux-android29
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
           cp -fr include ../../deps
           cp hwloc/.libs/libhwloc.a ../../deps/lib
@@ -57,13 +60,14 @@ jobs:
           tar -xzf openssl-${OPENSSL_VERSION}.tar.gz
 
           cd openssl-${OPENSSL_VERSION}
-          ./config linux-aarch64 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms
+          ./config android-arm64 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms  CC=aarch64-linux-android29-clang CXX=aarch64-linux-android29-clang++ LD=lld
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
           cp -fr include ../../deps
           cp libcrypto.a ../../deps/lib
           cp libssl.a ../../deps/lib
           cd ../
 
+          cd ../
           cd ../build
           cmake /home/runner/work/xmrig-C3/xmrig-C3 -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE="/home/runner/work/xmrig-C3/xmrig-C3/cmake/Toolchain-Clang-ARM64.cmake"
           make -j$(nproc) LD=lld
@@ -74,4 +78,4 @@ jobs:
         with:
           name: dist-without-markdown
           path: |
-            scripts/build/xmrig
+            build/xmrig
