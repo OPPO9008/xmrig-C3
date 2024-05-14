@@ -71,9 +71,9 @@ jobs:
 
           cd ../
           cd ../build
-          cmake ../ -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=$ANDROID_PLATFORM
+          pwd
+          cmake .. -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DARM_V8=ON -DXMRIG_DEPS=scripts/deps -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=$ANDROID_PLATFORM
           ls -a
-          cd ../
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
