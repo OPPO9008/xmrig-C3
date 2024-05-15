@@ -26,6 +26,7 @@ jobs:
           PATH=$ANDROID_HOME/cmake/3.22.1/bin:${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
           TOOLCHAIN=$ANDROID_HOME/ndk/26.3.11579264/build/cmake/android.toolchain.cmake
           ANDROID_PLATFORM=android-29
+          TARGET_DIR=$(pwd)/scripts/deps
           mkdir build && cd scripts
           mkdir -p deps
           mkdir -p deps/include
@@ -37,8 +38,13 @@ jobs:
           tar -xzf v${UV_VERSION}.tar.gz
           cd libuv-v${UV_VERSION}
           pwd
-          cmake -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DANDROID_ABI="arm64-v8a" -DANDROID_PLATFORM=$ANDROID_PLATFORM -DBUILD_SHARED_LIBS=OFF
+          cmake -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN \
+          -DANDROID_ABI="arm64-v8a" \
+          -DANDROID_PLATFORM=$ANDROID_PLATFORM \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_INSTALL_PREFIX=$TARGET_DIR 
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
+          make install
           cp -fr include ../../deps
           cp libuv.a ../../deps/lib
           cd ../
@@ -51,10 +57,9 @@ jobs:
           wget https://download.open-mpi.org/release/hwloc/v${HWLOC_VERSION_MAJOR}.${HWLOC_VERSION_MINOR}/hwloc-${HWLOC_VERSION}.tar.gz -O hwloc-${HWLOC_VERSION}.tar.gz
           tar -xzf hwloc-${HWLOC_VERSION}.tar.gz
           cd hwloc-${HWLOC_VERSION}
-          ./configure CC=aarch64-linux-android29-clang CXX=aarch64-linux-android29-clang++ LD=lld --disable-shared --enable-static --host=aarch64-linux-android29
+          ./configure CC=aarch64-linux-android29-clang CXX=aarch64-linux-android29-clang++ LD=lld --disable-shared --enable-static --host=aarch64-linux-android29 --prefix=${TARGET_DIR}
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
-          cp -fr include ../../deps
-          cp hwloc/.libs/libhwloc.a ../../deps/lib
+          make install
           cd ../
 
           OPENSSL_VERSION="3.0.13"
@@ -62,20 +67,17 @@ jobs:
           tar -xzf openssl-${OPENSSL_VERSION}.tar.gz
 
           cd openssl-${OPENSSL_VERSION}
-          ./config android-arm64 -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms LD=lld
+          ./config android-arm64 --prefix=${TARGET_DIR} -no-shared -no-asm -no-zlib -no-comp -no-dgram -no-filenames -no-cms LD=lld
           make -j$(nproc || sysctl -n hw.ncpu || sysctl -n hw.logicalcpu)
-          cp -fr include ../../deps
-          cp libcrypto.a ../../deps/lib
-          cp libssl.a ../../deps/lib
+          make install
           cd ../
 
           cd ../
           cd ../build
-          pwd
-          ls ../scripts/deps/include
+          ls ../scripts/deps
           cmake .. -DWITH_OPENCL=OFF \
           -DWITH_CUDA=OFF -DARM_V8=ON \
-          -DXMRIG_DEPS="../scripts/deps" \
+          -DXMRIG_DEPS="$TARGET_DIR" \
           -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC=OFF \
           -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN \
           -DANDROID_ABI="arm64-v8a" \
